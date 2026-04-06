@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NJ Transit Train Tracker
 
-## Getting Started
+A personal web app that shows real-time NJ Transit rail departures between any two stations — train number, line, scheduled departure, track, and live status. The board auto-refreshes so you always see current information without doing anything.
 
-First, run the development server:
+---
+
+## What it does
+
+- Pick an origin and destination station from dropdowns
+- See all trains running between them with live status (on-time, delayed, departed)
+- Delayed trains are visually highlighted
+- Board auto-refreshes every 30 seconds
+- Station selections persist across page refreshes (stored in the URL)
+
+---
+
+## Getting NJT API credentials
+
+1. Go to [https://datasource.njtransit.com](https://datasource.njtransit.com)
+2. Register for a free developer account
+3. Once approved, you'll receive a username and password
+4. Add them to `.env.local` (see below)
+
+You don't need credentials to run the app locally — mock mode works without them.
+
+---
+
+## Running locally with mock data (no credentials needed)
 
 ```bash
+# 1. Clone the repo
+git clone <your-repo-url>
+cd njt_app
+
+# 2. Install dependencies
+npm install
+
+# 3. Copy the example env file
+cp .env.example .env.local
+# .env.local already has USE_MOCK_API=true — no edits needed
+
+# 4. Start the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The app runs fully on realistic mock data.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Switching to real NJT data
 
-## Learn More
+1. Add your credentials to `.env.local`:
+   ```
+   NJT_USERNAME=your_username
+   NJT_PASSWORD=your_password
+   USE_MOCK_API=false
+   ```
+2. Restart the dev server (`npm run dev`)
 
-To learn more about Next.js, take a look at the following resources:
+The app will now call the live NJT API. Your credentials stay server-side only and are never sent to the browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Running tests
 
-## Deploy on Vercel
+```bash
+# Run all tests once
+npm test
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Run in watch mode (re-runs on file changes)
+npm run test:watch
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Tests cover:
+- API route logic (filtering, normalization, error handling)
+- All mock data scenarios (multiple trains, single train, empty, FULLSCREENMSG, delayed)
+- UI components (station dropdowns, train board, error states, refresh behavior)
+
+---
+
+## Deploying to Vercel
+
+```bash
+# Install Vercel CLI if needed
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
+
+When prompted (or via the Vercel dashboard), set these environment variables:
+
+| Variable | Value |
+|---|---|
+| `NJT_USERNAME` | Your NJT developer username |
+| `NJT_PASSWORD` | Your NJT developer password |
+| `USE_MOCK_API` | `false` (or omit entirely) |
+
+**Do not set these in any committed file.** Use the Vercel dashboard or `vercel env add`.
+
+---
+
+## Project structure
+
+```
+app/
+  api/
+    stations/route.ts   # GET /api/stations — returns all NJT rail stations
+    trains/route.ts     # GET /api/trains?from=XX&to=YY — filtered departures
+  components/           # React UI components
+  page.tsx              # Main page
+lib/
+  mock/                 # Mock API responses (mirrors real NJT API shapes)
+  njt/                  # Real NJT API adapters
+  types.ts              # Shared TypeScript types
+```
+
+---
+
+## Tech stack
+
+- [Next.js](https://nextjs.org) (App Router) + TypeScript
+- [Tailwind CSS](https://tailwindcss.com)
+- [Vitest](https://vitest.dev) + [React Testing Library](https://testing-library.com)
+- [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser) for NJT XML responses
