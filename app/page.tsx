@@ -1,16 +1,25 @@
-export default function Home() {
+import { Suspense } from "react";
+import TrainTracker from "./components/TrainTracker";
+import type { StationsResponse } from "@/lib/types";
+
+async function getStations() {
+  // Called server-side at render time — uses absolute URL for self-calls in Next.js
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+  const res = await fetch(`${baseUrl}/api/stations`, { next: { revalidate: 86400 } });
+  if (!res.ok) return [];
+  const data: StationsResponse = await res.json();
+  return data.stations ?? [];
+}
+
+export default async function Home() {
+  const stations = await getStations();
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold">Track your train</h2>
-        <p className="text-gray-400 max-w-md">
-          Select an origin and destination station to see live departures, track
-          assignments, and current status — updated automatically.
-        </p>
-      </div>
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 w-full max-w-xl">
-        <p className="text-gray-500 text-sm">Station selector coming in Phase 2</p>
-      </div>
-    </div>
+    <Suspense>
+      <TrainTracker initialStations={stations} />
+    </Suspense>
   );
 }
